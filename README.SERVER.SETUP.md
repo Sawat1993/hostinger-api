@@ -103,8 +103,9 @@ Generate Certificate:
 Run: sudo certbot --nginx -d sawatantra.cloud -d www.sawatantra.cloud
 
 # Phase 6: How to Update in Future
-The "One-Line" Update Command:
 
 Run this whenever you push new code to GitHub:
 
-cd ~/hostinger-ui && git pull origin main && sudo cp -r dist/ui/browser/* /var/www/sawatantra.cloud/html/ && npm install --production && pm2 reload nest-api
+cd ~/hostinger-ui && git pull origin main && sudo cp -r dist/ui/browser/* /var/www/sawatantra.cloud/html/
+
+cd ~/hostinger-ui && git pull origin main && npm install --production && pm2 reload nest-api
