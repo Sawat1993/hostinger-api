@@ -109,3 +109,5 @@ Run this whenever you push new code to GitHub:
 cd ~/hostinger-ui && git pull origin main && sudo cp -r dist/ui/browser/* /var/www/sawatantra.cloud/html/
 
 cd ~/hostinger-ui && git pull origin main && npm install --production && pm2 reload nest-api
+
+**view Logs**: pm2 logs [app-name] --lines 50 (clean logs)
