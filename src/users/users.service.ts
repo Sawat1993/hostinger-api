@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
@@ -35,10 +35,14 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         `Failed to create user (email=${createUserDto?.email})`,
-        // second param expects stack or metadata; pass stack if available
         (error as Error)?.stack ?? error,
       );
-      throw error;
+      throw new HttpException(
+        {
+          message: error.message || 'Failed to create user',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -50,7 +54,12 @@ export class UsersService {
         'Failed to retrieve users',
         (error as Error)?.stack ?? error,
       );
-      throw error;
+      throw new HttpException(
+        {
+          message: error.message || 'Failed to retrieve users',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -63,35 +72,39 @@ export class UsersService {
         .findOne({ email: loginDto.email })
         .exec();
       if (!user) {
-        this.logger.warn(
-          `Login failed: user not found (email=${loginDto.email})`,
+        throw new HttpException(
+          { message: `Login failed: user not found (email=${loginDto.email})` },
+          HttpStatus.UNAUTHORIZED,
         );
-        return null;
       }
 
       const match = await bcrypt.compare(loginDto.password, user.password);
       if (!match) {
-        this.logger.warn(
-          `Login failed: invalid password (email=${loginDto.email})`,
+        throw new HttpException(
+          {
+            message: `Login failed: invalid password (email=${loginDto.email})`,
+          },
+          HttpStatus.UNAUTHORIZED,
         );
-        return null;
       }
 
       // Sign a JWT. Get secret from ConfigService and fail fast if missing
       const JWT_SECRET = this.configService.get<string>('JWT_SECRET');
       if (!JWT_SECRET) {
-        throw new Error('JWT_SECRET is not configured in ConfigService');
+        throw new HttpException(
+          { message: 'JWT_SECRET is not configured in ConfigService' },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
       }
       const token = jwt.sign({ sub: user._id, email: user.email }, JWT_SECRET, {
         expiresIn: '1h',
       });
       return { accessToken: token };
     } catch (error) {
-      this.logger.error(
-        `Failed to login user (email=${loginDto?.email})`,
-        (error as Error)?.stack ?? error,
+      throw new HttpException(
+        { message: error.message || 'Failed to login user' },
+        HttpStatus.UNAUTHORIZED,
       );
-      throw error;
     }
   }
 }
