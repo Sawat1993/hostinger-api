@@ -14,10 +14,8 @@ async function bootstrap() {
   // Read port from ConfigService (uses .env via ConfigModule)
   const configService = app.get(ConfigService);
   const rawPort = configService.get<string | number>('PORT');
-  logger.log(`PORT from ConfigService: ${String(rawPort ?? 'not set')}`);
 
   const port = Number(rawPort ?? 3000) || 3000;
-  logger.log(`Resolved numeric port: ${port}`);
 
   // Apply JWT guard globally (it will skip routes marked with @Public)
   const jwtGuard = app.get(JwtAuthGuard);

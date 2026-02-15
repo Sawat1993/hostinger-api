@@ -96,9 +96,13 @@ export class UsersService {
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
-      const token = jwt.sign({ sub: user._id, email: user.email }, JWT_SECRET, {
-        expiresIn: '1h',
-      });
+      const token = jwt.sign(
+        { sub: user._id, email: user.email, name: user.name },
+        JWT_SECRET,
+        {
+          expiresIn: '1h',
+        },
+      );
       return { accessToken: token };
     } catch (error) {
       throw new HttpException(
