@@ -21,7 +21,7 @@ async function bootstrap() {
   const jwtGuard = app.get(JwtAuthGuard);
   app.useGlobalGuards(jwtGuard);
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`Application is listening on port ${port}`);
 }
 
