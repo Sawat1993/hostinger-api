@@ -38,7 +38,7 @@ export class EmailService {
       const response = await this.resend.emails.send({
         from,
         to: email,
-        subject: 'Your OTP Code',
+        subject: 'Welcome to My Application - Your OTP Code',
         html: `
           <html>
             <body style="font-family: Arial, sans-serif;">

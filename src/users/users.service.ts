@@ -228,4 +228,48 @@ export class UsersService {
       );
     }
   }
+
+  async renewToken(email: string): Promise<{ accessToken: string }> {
+    try {
+      const user = await this.userModel.findOne({ email }).exec();
+      if (!user) {
+        throw new HttpException(
+          { message: 'User not found' },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Generate a new JWT token
+      const JWT_SECRET = this.configService.get<string>('JWT_SECRET');
+      if (!JWT_SECRET) {
+        throw new HttpException(
+          { message: 'JWT_SECRET is not configured in ConfigService' },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+
+      const token = jwt.sign(
+        { sub: user._id, email: user.email, name: user.name },
+        JWT_SECRET,
+        {
+          expiresIn: '1h',
+        },
+      );
+
+      this.logger.log(`Token renewed for user: ${user.email}`);
+      return { accessToken: token };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to renew token for user (email=${email})`,
+        (error as Error)?.stack ?? error,
+      );
+      throw new HttpException(
+        { message: error.message || 'Failed to renew token' },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

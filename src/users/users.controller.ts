@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Req } from '@nestjs/common'; // Req is used in the @Req() decorator
 import { Public } from '../auth/public.decorator';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -34,5 +34,15 @@ export class UsersController {
   @Public()
   async login(@Body() loginDto: LoginUserDto) {
     return this.usersService.login(loginDto);
+  }
+
+  @Post('renew-token')
+  async renewToken(@Req() request: any) {
+    // The JWT guard attaches the payload to request.user
+    const userEmail = request.user?.email;
+    if (!userEmail) {
+      throw new Error('User email not found in token');
+    }
+    return this.usersService.renewToken(userEmail);
   }
 }

@@ -72,5 +72,5 @@ docker compose up -d --build
 Action,Command
 Check Health,docker ps
 View API Logs,docker logs -f hostinger-api
-Update App,docker compose up -d --build
+Update App,docker compose up -d --build (docker compose up -d --build --force-recreate --renew-anon-volumes)
 Clean Up Space,docker image prune -f
