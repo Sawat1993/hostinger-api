@@ -64,10 +64,9 @@ export class PlanningPokerService {
   }
 
   // Get participants of a board with their details (email and name)
-  async getParticipants(boardId: string): Promise<{
-    createdByEmail?: string;
-    participants: Array<{ email: string; name: string }>;
-  }> {
+  async getParticipants(
+    boardId: string,
+  ): Promise<Array<{ email: string; name: string }>> {
     try {
       const board = await this.boardModel.findOne({ boardId }).exec();
       if (!board) {
@@ -88,10 +87,7 @@ export class PlanningPokerService {
         };
       });
 
-      return {
-        createdByEmail: board.createdByEmail,
-        participants: participantDetails,
-      };
+      return participantDetails;
     } catch (error) {
       throw new HttpException(
         `Failed to get participants: ${error?.message || error}`,
