@@ -62,7 +62,7 @@ export class AIService {
   }
 
   // Query endpoint: use Gemini and vector search to answer
-  async query(query: string, topK = 5): Promise<{ answer: string }> {
+  async query(query: string, topK = 8): Promise<{ answer: string }> {
     try {
       const relevantDocs = await this.findSimilarByQuery(query, topK);
       const contextTexts = relevantDocs.map((doc) => doc.content);

@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AIModule } from './ai/ai.module';
+import { PlanningPokerModule } from './planning-poker/planning-poker.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Module({
@@ -33,6 +34,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     }),
     UsersModule,
     AIModule,
+    PlanningPokerModule,
   ],
   controllers: [AppController],
   providers: [AppService, JwtAuthGuard],

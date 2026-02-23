@@ -70,6 +70,7 @@ export class UsersService {
     try {
       const user = await this.userModel
         .findOne({ email: loginDto.email })
+        .collation({ locale: 'en', strength: 2 })
         .exec();
       if (!user) {
         throw new HttpException(
@@ -108,6 +109,34 @@ export class UsersService {
       throw new HttpException(
         { message: error.message || 'Failed to login user' },
         HttpStatus.UNAUTHORIZED,
+      );
+    }
+  }
+
+  async search(query: string): Promise<User[]> {
+    try {
+      if (!query || query.trim() === '') {
+        return [];
+      }
+      // Search by name or email using regex for case-insensitive matching
+      const searchRegex = new RegExp(query, 'i');
+      const users = await this.userModel
+        .find({
+          $or: [{ name: searchRegex }, { email: searchRegex }],
+        })
+        .lean()
+        .exec();
+      return users;
+    } catch (error) {
+      this.logger.error(
+        `Failed to search users (query=${query})`,
+        (error as Error)?.stack ?? error,
+      );
+      throw new HttpException(
+        {
+          message: error.message || 'Failed to search users',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
