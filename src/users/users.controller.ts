@@ -18,7 +18,14 @@ export class UsersController {
     return this.usersService.search(query);
   }
 
+  @Post('register')
+  @Public()
+  async register(@Body() body: { email: string }) {
+    return this.usersService.registerAndSendOtp(body.email);
+  }
+
   @Post()
+  @Public()
   async create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }

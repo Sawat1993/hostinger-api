@@ -6,6 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class UsersService {
@@ -14,25 +15,112 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private configService: ConfigService,
+    private emailService: EmailService,
   ) {}
+
+  private generateOtp(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  async registerAndSendOtp(email: string): Promise<{ message: string }> {
+    try {
+      const otp = this.generateOtp();
+      const otpExpiresAt = new Date();
+      otpExpiresAt.setMinutes(otpExpiresAt.getMinutes() + 10);
+
+      await this.userModel.findOneAndUpdate(
+        { email },
+        { email, otp, otpExpiresAt },
+        { upsert: true },
+      );
+
+      // Send OTP via email
+      const emailResult = await this.emailService.sendOtpEmail(email, otp);
+
+      if (!emailResult.success) {
+        this.logger.error(
+          `Failed to send OTP email to ${email}: ${emailResult.error}`,
+        );
+        throw new HttpException(
+          { message: 'Failed to send OTP email' },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      this.logger.log(`OTP generated and sent to ${email}: ${otp}`);
+      return { message: `OTP sent to ${email}` };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(`Failed to register and send OTP`, error);
+      throw new HttpException(
+        { message: 'Failed to send OTP' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      // Hash the password before creating the user
-      const SALT_ROUNDS = 10;
-      const hashed = await bcrypt.hash(createUserDto.password, SALT_ROUNDS);
-      const toCreate = {
-        ...createUserDto,
-        password: hashed,
-      } as CreateUserDto;
+      const { email, password, name, otp } = createUserDto;
 
-      const created = new this.userModel(toCreate);
-      // Avoid returning the password in the response by converting toObject and deleting it
-      const saved = await created.save();
-      const obj = saved.toObject();
+      // Find user by email
+      const user = await this.userModel.findOne({ email });
+      if (!user) {
+        throw new HttpException(
+          { message: 'User not found. Please register first.' },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      // Validate OTP exists and hasn't expired
+      if (!user.otp || user.otp !== otp) {
+        throw new HttpException(
+          { message: 'Invalid OTP' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      if (new Date() > user.otpExpiresAt) {
+        throw new HttpException(
+          { message: 'OTP has expired' },
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      // Hash password and update user
+      const SALT_ROUNDS = 10;
+      const hashed = await bcrypt.hash(password, SALT_ROUNDS);
+
+      const updated = await this.userModel.findOneAndUpdate(
+        { email },
+        {
+          name,
+          password: hashed,
+          otp: null,
+          otpExpiresAt: null,
+        },
+        { new: true },
+      );
+
+      // Send welcome email
+      const emailResult = await this.emailService.sendWelcomeEmail(email, name);
+
+      if (!emailResult.success) {
+        this.logger.warn(
+          `Welcome email failed to send to ${email}: ${emailResult.error}`,
+        );
+        // Don't throw error here as user is already created
+      }
+
+      const obj = updated.toObject();
       delete obj.password;
       return obj as unknown as User;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error(
         `Failed to create user (email=${createUserDto?.email})`,
         (error as Error)?.stack ?? error,

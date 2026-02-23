@@ -13,6 +13,12 @@ export class User {
 
   @Prop({ required: true })
   password: string;
+
+  @Prop()
+  otp: string;
+
+  @Prop()
+  otpExpiresAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
