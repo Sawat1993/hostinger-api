@@ -8,6 +8,10 @@ export class EmailService {
   private resend: Resend;
 
   constructor(private configService: ConfigService) {
+    this.initializeResend();
+  }
+
+  private initializeResend(): void {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     if (!apiKey) {
       this.logger.warn('RESEND_API_KEY is not configured');
@@ -25,6 +29,10 @@ export class EmailService {
         'RESEND_FROM_EMAIL',
         'Sawatantra <no-reply@sawatantra.cloud>',
       );
+
+      if (!this.resend) {
+        this.initializeResend();
+      }
 
       const response = await this.resend.emails.send({
         from,
