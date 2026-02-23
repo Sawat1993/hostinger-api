@@ -8,10 +8,6 @@ export class EmailService {
   private resend: Resend;
 
   constructor(private configService: ConfigService) {
-    this.initializeResend();
-  }
-
-  private initializeResend(): void {
     const apiKey = this.configService.get<string>('RESEND_API_KEY');
     if (!apiKey) {
       this.logger.warn('RESEND_API_KEY is not configured');
@@ -31,7 +27,11 @@ export class EmailService {
       );
 
       if (!this.resend) {
-        this.initializeResend();
+        this.logger.error('Resend client is not initialized');
+        return {
+          success: false,
+          error: 'Email service is not available',
+        };
       }
 
       const response = await this.resend.emails.send({
