@@ -98,8 +98,10 @@ export class UsersService {
         {
           name,
           password: hashed,
-          otp: null,
-          otpExpiresAt: null,
+          $unset: {
+            otp: '',
+            otpExpiresAt: '',
+          },
         },
         { new: true },
       );

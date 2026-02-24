@@ -74,3 +74,80 @@ Check Health,docker ps
 View API Logs,docker logs -f hostinger-api
 Update App,docker compose up -d --build (docker compose up -d --build --force-recreate --renew-anon-volumes)
 Clean Up Space,docker image prune -f
+
+
+services:
+  # 1. Standard MongoDB 
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 2. Your Backend API
+  hostinger-api:
+    build: https://github.com/${GITHUB_USER}/hostinger-api.git#main
+    container_name: hostinger-api
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=${MONGO_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - GEMINI_GENERATE_MODEL=${GEMINI_GENERATE_MODEL}
+      - GEMINI_EMBED_MODEL=${GEMINI_EMBED_MODEL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - mongo
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 3. Your Frontend UI
+  hostinger-ui:
+    build: https://github.com/${GITHUB_USER}/hostinger-ui.git#main
+    container_name: hostinger-ui
+    restart: always
+    expose:
+      - "80"
+    depends_on:
+      - hostinger-api
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 4. Reverse Proxy
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /home/webadmin/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mongo_data:
+  caddy_data:
+  caddy_config:
